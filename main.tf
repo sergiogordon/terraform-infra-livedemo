@@ -34,7 +34,7 @@ resource "aws_iam_role_policy_attachment" "ssm_attach" {
 }
 
 resource "aws_instance" "web" {
-  ami                  = "ami-0c55b159cbfafe1f0" # Amazon Linux 2 AMI for us-east-2
+  ami                  = "ami-042e8287309f5df03" # Ubuntu Server 20.04 LTS AMI for us-east-2
   instance_type        = "t2.micro"
   subnet_id            = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
@@ -42,12 +42,12 @@ resource "aws_instance" "web" {
 
   user_data = <<-EOF
               #!/bin/bash
-              yum update -y
-              yum install -y nginx
-              amazon-linux-extras install -y ssm-agent
-              systemctl enable amazon-ssm-agent
-              systemctl start amazon-ssm-agent
-              echo 'Hello world, this was deployed via Terraform Cloud!' > /usr/share/nginx/html/index.html
+              apt-get update -y
+              apt-get install -y nginx
+              snap install amazon-ssm-agent --classic
+              systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
+              systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
+              echo 'Hello world, this was deployed via Terraform Cloud!' > /var/www/html/index.html
               systemctl start nginx
               systemctl enable nginx
               EOF
