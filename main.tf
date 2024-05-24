@@ -34,7 +34,7 @@ resource "aws_iam_role_policy_attachment" "ssm_attach" {
 }
 
 resource "aws_instance" "web" {
-  ami                  = "ami-042e8287309f5df03" # Ubuntu Server 20.04 LTS AMI for us-east-2
+  ami                  = "ami-09040d770ffe2224f" # Ubuntu Server 20.04 LTS AMI for us-east-2
   instance_type        = "t2.micro"
   subnet_id            = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
