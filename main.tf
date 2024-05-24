@@ -11,6 +11,57 @@ provider "aws" {
   region = "us-east-2"
 }
 
+resource "aws_iam_role" "ec2_ssm_role" {
+  name = "ec2_ssm_role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_attach" {
+  role       = aws_iam_role.ec2_ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_instance" "web" {
+  ami                  = "ami-0c55b159cbfafe1f0" # Amazon Linux 2 AMI for us-east-2
+  instance_type        = "t2.micro"
+  subnet_id            = aws_subnet.public.id
+  vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
+  iam_instance_profile = aws_iam_instance_profile.ec2_ssm_profile.name
+
+  user_data = <<-EOF
+              #!/bin/bash
+              yum update -y
+              yum install -y nginx
+              amazon-linux-extras install -y ssm-agent
+              systemctl enable amazon-ssm-agent
+              systemctl start amazon-ssm-agent
+              echo 'Hello world, this was deployed via Terraform Cloud!' > /usr/share/nginx/html/index.html
+              systemctl start nginx
+              systemctl enable nginx
+              EOF
+
+  tags = {
+    Name = "web-server"
+  }
+}
+
+resource "aws_iam_instance_profile" "ec2_ssm_profile" {
+  name = "ec2_ssm_profile"
+  role = aws_iam_role.ec2_ssm_role.name
+}
+
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
 
@@ -20,9 +71,9 @@ resource "aws_vpc" "main" {
 }
 
 resource "aws_subnet" "public" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.1.0/24"
-  map_public_ip_on_launch = true
+  vpc_id                   = aws_vpc.main.id
+  cidr_block               = "10.0.1.0/24"
+  map_public_ip_on_launch  = true
 
   tags = {
     Name = "public-subnet"
@@ -86,26 +137,15 @@ resource "aws_security_group" "allow_ssh_http" {
   }
 }
 
-resource "aws_instance" "web" {
-  ami                  = "ami-0c55b159cbfafe1f0" # Amazon Linux 2 AMI for us-east-2
-  instance_type        = "t2.micro"
-  subnet_id            = aws_subnet.public.id
-  vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
-
-  user_data = <<-EOF
-              #!/bin/bash
-              yum update -y
-              yum install -y nginx
-              echo 'Hello world, this was deployed via Terraform Cloud!' > /usr/share/nginx/html/index.html
-              systemctl start nginx
-              systemctl enable nginx
-              EOF
-
-  tags = {
-    Name = "web-server"
-  }
+resource "aws_eip" "web_eip" {
+  instance = aws_instance.web.id
+  vpc      = true
 }
 
 output "instance_public_ip" {
   value = aws_instance.web.public_ip
+}
+
+output "elastic_ip" {
+  value = aws_eip.web_eip.public_ip
 }
