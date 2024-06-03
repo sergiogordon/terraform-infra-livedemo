@@ -69,17 +69,6 @@ resource "aws_iam_instance_profile" "ec2_ssm_profile" {
   role = aws_iam_role.ec2_ssm_role.name
 }
 
-# Create an S3 bucket with a unique name
-resource "aws_s3_bucket" "terraform_bucket" {
-  bucket = "sg-terraformbucket-${formatdate("YYYYMMDD", timestamp())}-${random_id.unique_id.hex}"
-}
-
-# Set the ACL for the S3 bucket
-resource "aws_s3_bucket_acl" "terraform_bucket_acl" {
-  bucket = aws_s3_bucket.terraform_bucket.id
-  acl    = "private"
-}
-
 # Create a VPC with a specific CIDR block
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
