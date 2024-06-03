@@ -39,29 +39,23 @@ resource "aws_iam_role_policy_attachment" "ssm_attach" {
 
 # Create an EC2 instance with the following configuration:
 resource "aws_instance" "web" {
-  # Use the specified Ubuntu Server 20.04 LTS AMI for us-east-2
-  ami                  = "ami-09040d770ffe2224f" 
-  # Use a t2.micro instance type
-  instance_type        = "t2.micro"
-  # Assign the instance to the public subnet
-  subnet_id            = aws_subnet.public.id
-  # Allow SSH and HTTP traffic from anywhere
+  ami           = "ami-09040d770ffe2224f"
+  instance_type = "t2.micro"
+  subnet_id     = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
-  # Attach the EC2 SSM instance profile to the instance
   iam_instance_profile = aws_iam_instance_profile.ec2_ssm_profile.name
 
-  # User data script to run on instance startup
   user_data = <<-EOF
               #!/bin/bash
               apt-get update -y
               apt-get install -y nginx
               snap install amazon-ssm-agent --classic
-              systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
-              systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
+              systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent
+              systemctl start snap.amazon-ssm-agent.amazon-ssm-agent
               echo 'Hello world, this was deployed via Terraform Cloud!' > /var/www/html/index.html
               systemctl start nginx
               systemctl enable nginx
-              EOF
+  EOF
 
   # Tag the instance with a name for easy identification
   tags = {
@@ -73,6 +67,17 @@ resource "aws_instance" "web" {
 resource "aws_iam_instance_profile" "ec2_ssm_profile" {
   name = "ec2_ssm_profile"
   role = aws_iam_role.ec2_ssm_role.name
+}
+
+# Create an S3 bucket with a unique name
+resource "aws_s3_bucket" "terraform_bucket" {
+  bucket = "sg-terraformbucket-${formatdate("YYYYMMDD", timestamp())}-${random_id.unique_id.hex}"
+}
+
+# Set the ACL for the S3 bucket
+resource "aws_s3_bucket_acl" "terraform_bucket_acl" {
+  bucket = aws_s3_bucket.terraform_bucket.id
+  acl    = "private"
 }
 
 # Create a VPC with a specific CIDR block
@@ -87,14 +92,9 @@ resource "aws_vpc" "main" {
 
 # Create a public subnet within the VPC
 resource "aws_subnet" "public" {
-  vpc_id                   = aws_vpc.main.id
-  cidr_block               = "10.0.1.0/24"
-  map_public_ip_on_launch  = true
-
-  # Tag the subnet for identification
-  tags = {
-    Name = "public-subnet"
-  }
+  vpc_id     = aws_vpc.main.id
+  cidr_block  = "10.0.1.0/24"
+  map_public_ip_on_launch = true
 }
 
 # Create an internet gateway to connect the VPC to the internet
@@ -109,7 +109,7 @@ resource "aws_internet_gateway" "gw" {
 
 # Create a route table for the public subnet
 resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.main.id
+  vpc_id     = aws_vpc.main.id
 
   # Route all traffic to the internet gateway
   route {
@@ -129,11 +129,11 @@ resource "aws_route_table_association" "a" {
   route_table_id = aws_route_table.public.id
 }
 
-# Create a security group to allow SSH and HTTP traffic to the EC2 instance
+# Allow SSH and HTTP traffic to the EC2 instance
 resource "aws_security_group" "allow_ssh_http" {
-  vpc_id = aws_vpc.main.id
+  vpc_id      = aws_vpc.main.id
 
-  # Allow SSH traffic from anywhere
+  # Allow SSH and HTTP traffic from anywhere
   ingress {
     description = "SSH"
     from_port   = 22
@@ -142,7 +142,6 @@ resource "aws_security_group" "allow_ssh_http" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Allow HTTP traffic from anywhere
   ingress {
     description = "HTTP"
     from_port   = 80
@@ -165,12 +164,16 @@ resource "aws_security_group" "allow_ssh_http" {
   }
 }
 
+# Create a random ID for the S3 bucket
+resource "random_id" "unique_id" {
+  byte_length = 8
+}
+
 # Associate an Elastic IP address with the EC2 instance
 resource "aws_eip" "web_eip" {
   instance = aws_instance.web.id
-  domain   = "vpc" # Use the 'domain' attribute instead of 'vpc'
+  domain   = "vpc"
 }
-
 
 # Output the public IP address of the EC2 instance
 output "instance_public_ip" {
@@ -181,16 +184,14 @@ output "instance_public_ip" {
 output "elastic_ip" {
   value = aws_eip.web_eip.public_ip
 }
+
 # Deploying terraform bucket for todays date and adding suffix
 resource "aws_s3_bucket" "terraform_bucket" {
-  bucket = "sg-terraformbucket-${formatdate("YYYYMMDD", timestamp())}-${random_id.unique_id.hex}"
-  acl    = "private"
-
-  tags = {
-    Name = "Terraform-Bucket"
-  }
+  bucket = "sg-terraformbucket-${formatdate("YYYYMMDD", timestamp())}-${random_id.unique_id.id}"
 }
 
-resource "random_id" "unique_id" {
-  byte_length = 8
+# Set the ACL for the S3 bucket
+resource "aws_s3_bucket_acl" "terraform_bucket_acl" {
+  bucket = aws_s3_bucket.terraform_bucket.id
+  acl    = "private"
 }
