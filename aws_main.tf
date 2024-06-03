@@ -179,7 +179,7 @@ resource "random_string" "bucket_suffix" {
   special = false
   upper   = false
   lower   = true
-  number  = true
+  numeric = true # Use 'numeric' instead of 'number'
 }
 
 # Create the S3 bucket with a valid name
@@ -187,9 +187,20 @@ resource "aws_s3_bucket" "terraform_bucket" {
   bucket = "tf-bucket-${formatdate("YYYYMMDD", timestamp())}-${random_string.bucket_suffix.result}"
 }
 
-# Set the ACL for the S3 bucket
-resource "aws_s3_bucket_acl" "terraform_bucket_acl" {
+# Set the bucket ownership controls to BucketOwnerEnforced
+resource "aws_s3_bucket_ownership_controls" "terraform_bucket_ownership" {
   bucket = aws_s3_bucket.terraform_bucket.id
-  acl    = "private"
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+# Block public access to the S3 bucket
+resource "aws_s3_bucket_public_access_block" "terraform_bucket_public_access" {
+  bucket = aws_s3_bucket.terraform_bucket.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
