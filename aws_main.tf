@@ -180,3 +180,12 @@ output "instance_public_ip" {
 output "elastic_ip" {
   value = aws_eip.web_eip.public_ip
 }
+# Deploying terraform bucket for today June 3rd
+resource "aws_s3_bucket" "terraform_bucket" {
+  bucket = "sg-terraformbucket-${formatdate("YYYYMMDD", timestamp())}"
+  acl    = "private"
+
+  tags = {
+    Name = "Terraform-Bucket"
+  }
+}
