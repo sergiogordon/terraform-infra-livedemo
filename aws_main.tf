@@ -185,13 +185,3 @@ output "elastic_ip" {
   value = aws_eip.web_eip.public_ip
 }
 
-# Deploying terraform bucket for todays date and adding suffix
-resource "aws_s3_bucket" "terraform_bucket" {
-  bucket = "sg-terraformbucket-${formatdate("YYYYMMDD", timestamp())}-${random_id.unique_id.id}"
-}
-
-# Set the ACL for the S3 bucket
-resource "aws_s3_bucket_acl" "terraform_bucket_acl" {
-  bucket = aws_s3_bucket.terraform_bucket.id
-  acl    = "private"
-}
