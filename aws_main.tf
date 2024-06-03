@@ -168,8 +168,9 @@ resource "aws_security_group" "allow_ssh_http" {
 # Associate an Elastic IP address with the EC2 instance
 resource "aws_eip" "web_eip" {
   instance = aws_instance.web.id
-  vpc      = true
+  domain   = "vpc" # Use the 'domain' attribute instead of 'vpc'
 }
+
 
 # Output the public IP address of the EC2 instance
 output "instance_public_ip" {
