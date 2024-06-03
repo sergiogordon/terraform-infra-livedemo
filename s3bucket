@@ -1,8 +1,12 @@
 resource "aws_s3_bucket" "terraform_bucket" {
-  bucket = "sg-terraformbucket-${formatdate("YYYYMMDD", timestamp())}"
+  bucket = "sg-terraformbucket-${formatdate("YYYYMMDD", timestamp())}-${random_id.unique_id.hex}"
   acl    = "private"
 
   tags = {
     Name = "Terraform-Bucket"
   }
+}
+
+resource "random_id" "unique_id" {
+  byte_length = 8
 }
