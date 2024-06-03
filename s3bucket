@@ -1,0 +1,8 @@
+resource "aws_s3_bucket" "terraform_bucket" {
+  bucket = "sg-terraformbucket-${formatdate("YYYYMMDD", timestamp())}"
+  acl    = "private"
+
+  tags = {
+    Name = "Terraform-Bucket"
+  }
+}
