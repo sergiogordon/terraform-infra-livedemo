@@ -3,15 +3,22 @@ provider "azurerm" {
   features {}
 }
 
+# Generate a random string to use as a suffix
+resource "random_string" "random_suffix" {
+  length  = 4
+  special = false
+  upper   = false
+}
+
 # Create a resource group to organize resources
 resource "azurerm_resource_group" "terraform_rg" {
-  name     = "terraform-resources-env"
+  name     = "terraform-resources-env-${random_string.random_suffix.result}"
   location = "East US"
 }
 
 # Create a storage account within the resource group
 resource "azurerm_storage_account" "terraform_storage_account" {
-  name                     = "terraformresourcebucket"
+  name                     = "terraformresourcebucket${random_string.random_suffix.result}"
   resource_group_name      = azurerm_resource_group.terraform_rg.name
   location                 = azurerm_resource_group.terraform_rg.location
   account_tier             = "Standard"
