@@ -58,18 +58,18 @@ resource "aws_instance" "web" {
     Name = "web-server"
   }
 
-# Ansible config
-provisioner "ansible" {
-  plays {
-    playbook {
-      file_path  = "web-server.yml"
-      roles_path = "web-server"
+  # Ansible config
+  provisioner "ansible" {
+    plays {
+      playbook {
+        file_path  = "web-server.yml"
+        roles_path = "web-server"
+      }
+      hosts = ["${self.public_ip}"]
     }
-    hosts = ["${self.public_ip}"]
+    source = "https://github.com/sergiogordon/terraform-infra-dev"
   }
-  source = "https://github.com/sergiogordon/terraform-infra-dev"
 }
-
 
 # Create an IAM instance profile to associate with the EC2 instance
 resource "aws_iam_instance_profile" "ec2_ssm_profile" {
