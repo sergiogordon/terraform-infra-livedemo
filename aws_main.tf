@@ -51,7 +51,6 @@ resource "aws_instance" "web" {
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
   iam_instance_profile   = aws_iam_instance_profile.ec2_ssm_profile.name
-}
 
   # Tag the instance with a name for easy identification
   tags = {
@@ -69,7 +68,7 @@ resource "aws_instance" "web" {
     }
     source = "https://github.com/sergiogordon/terraform-infra-dev"
   }
-}
+} 
 
 # Create an IAM instance profile to associate with the EC2 instance
 resource "aws_iam_instance_profile" "ec2_ssm_profile" {
