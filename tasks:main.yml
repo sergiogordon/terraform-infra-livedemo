@@ -1,0 +1,31 @@
+---
+- name: Update package cache
+  apt:
+    update_cache: yes
+
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Install AWS SSM Agent
+  snap:
+    name: amazon-ssm-agent
+    classic: true
+
+- name: Start and enable AWS SSM Agent
+  systemd:
+    name: snap.amazon-ssm-agent.amazon-ssm-agent
+    state: started
+    enabled: yes
+
+- name: Create index.html
+  copy:
+    content: "Hello world, this was deployed via Terraform Cloud and ansible!"
+    dest: /var/www/html/index.html
+
+- name: Start and enable Nginx
+  systemd:
+    name: nginx
+    state: started
+    enabled: yes
