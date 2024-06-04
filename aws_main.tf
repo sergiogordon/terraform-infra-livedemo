@@ -4,12 +4,19 @@ terraform {
       source  = "hashicorp/aws"
       version = "5.51.0"
     }
+    ansible = {
+      source  = "ansible/ansible"
+      version = "1.3.0"
+    }
   }
 }
 
-# Configure the AWS provider with the desired region
 provider "aws" {
   region = "us-east-2"
+}
+
+provider "ansible" {
+  # Configuration options
 }
 
 # Create an IAM role for EC2 instances to assume for accessing SSM
@@ -39,27 +46,27 @@ resource "aws_iam_role_policy_attachment" "ssm_attach" {
 
 # Create an EC2 instance with the following configuration:
 resource "aws_instance" "web" {
-  ami           = "ami-09040d770ffe2224f"
-  instance_type = "t2.micro"
-  subnet_id     = aws_subnet.public.id
+  ami                    = "ami-09040d770ffe2224f"
+  instance_type          = "t2.micro"
+  subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.allow_ssh_http.id]
-  iam_instance_profile = aws_iam_instance_profile.ec2_ssm_profile.name
-
-  user_data = <<-EOF
-              #!/bin/bash
-              apt-get update -y
-              apt-get install -y nginx
-              snap install amazon-ssm-agent --classic
-              systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent
-              systemctl start snap.amazon-ssm-agent.amazon-ssm-agent
-              echo 'Hello world, this was deployed via Terraform Cloud!' > /var/www/html/index.html
-              systemctl start nginx
-              systemctl enable nginx
-  EOF
+  iam_instance_profile   = aws_iam_instance_profile.ec2_ssm_profile.name
 
   # Tag the instance with a name for easy identification
   tags = {
     Name = "web-server"
+  }
+
+# Ansible config
+  provisioner "ansible" {
+    plays {
+      playbook {
+        file_path  = "playbooks/web-server.yml"
+        roles_path = "roles"
+      }
+      hosts = ["${self.public_ip}"]
+    }
+    source = "https://github.com/sergiogordon/terraform-infra-dev"
   }
 }
 
@@ -81,8 +88,8 @@ resource "aws_vpc" "main" {
 
 # Create a public subnet within the VPC
 resource "aws_subnet" "public" {
-  vpc_id     = aws_vpc.main.id
-  cidr_block  = "10.0.1.0/24"
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
   map_public_ip_on_launch = true
 }
 
@@ -98,7 +105,7 @@ resource "aws_internet_gateway" "gw" {
 
 # Create a route table for the public subnet
 resource "aws_route_table" "public" {
-  vpc_id     = aws_vpc.main.id
+  vpc_id = aws_vpc.main.id
 
   # Route all traffic to the internet gateway
   route {
@@ -120,7 +127,7 @@ resource "aws_route_table_association" "a" {
 
 # Allow SSH and HTTP traffic to the EC2 instance
 resource "aws_security_group" "allow_ssh_http" {
-  vpc_id      = aws_vpc.main.id
+  vpc_id = aws_vpc.main.id
 
   # Allow SSH and HTTP traffic from anywhere
   ingress {
@@ -173,6 +180,7 @@ output "instance_public_ip" {
 output "elastic_ip" {
   value = aws_eip.web_eip.public_ip
 }
+
 # Generate a random string for the bucket name suffix
 resource "random_string" "bucket_suffix" {
   length  = 8
@@ -203,4 +211,3 @@ resource "aws_s3_bucket_public_access_block" "terraform_bucket_public_access" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
-
