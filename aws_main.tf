@@ -169,11 +169,6 @@ resource "aws_eip" "web_eip" {
   domain   = "vpc"
 }
 
-# Output the public IP address of the EC2 instance
-output "instance_public_ip" {
-  value = aws_instance.web.public_ip
-}
-
 # Output the public IP address of the Elastic IP
 output "elastic_ip" {
   value = aws_eip.web_eip.public_ip
