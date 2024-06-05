@@ -12,11 +12,12 @@ provider "aws" {
   region = "us-east-2"
 }
 
-# Create an IAM role for EC2 instances to assume for accessing SSM
+# Create a random ID for unique names
 resource "random_id" "unique_id" {
   byte_length = 2  # Generate 2 bytes (4 hex digits)
 }
 
+# Create an IAM role for EC2 instances to assume for accessing SSM
 resource "aws_iam_role" "ec2_ssm_role" {
   name = "ec2_ssm_role-${substr(random_id.unique_id.hex, 0, 3)}"
 
@@ -69,7 +70,7 @@ resource "aws_instance" "web" {
 
 # Create an IAM instance profile to associate with the EC2 instance
 resource "aws_iam_instance_profile" "ec2_ssm_profile" {
-  name = "ec2_ssm_profile"
+  name = "ec2_ssm_profile-${substr(random_id.unique_id.hex, 0, 3)}"
   role = aws_iam_role.ec2_ssm_role.name
 }
 
@@ -136,44 +137,4 @@ resource "aws_security_group" "allow_ssh_http" {
   }
 
   ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Allow all outbound traffic
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Tag the security group for identification
-  tags = {
-    Name = "allow_ssh_http"
-  }
-}
-
-# Create a random ID for the S3 bucket
-resource "random_id" "unique_id_s3" {
-  byte_length = 8
-}
-
-# Associate an Elastic IP address with the EC2 instance
-resource "aws_eip" "web_eip" {
-  instance = aws_instance.web.id
-  domain   = "vpc"
-}
-
-# Output the public IP address of the EC2 instance
-output "instance_public_ip" {
-  value = aws_instance.web.public_ip
-}
-
-# Output the public IP address of the Elastic IP
-output "elastic_ip" {
-  value = aws_eip.web_eip.public_ip
-}
+    description
