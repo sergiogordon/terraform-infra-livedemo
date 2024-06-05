@@ -13,13 +13,12 @@ provider "aws" {
 }
 
 # Create an IAM role for EC2 instances to assume for accessing SSM
-resource "random_id" "unique_number" {
-  min = 100
-  max = 999
+resource "random_id" "unique_id" {
+  byte_length = 2  # Generate 2 bytes (4 hex digits)
 }
 
 resource "aws_iam_role" "ec2_ssm_role" {
-  name = "ec2_ssm_role-${random_int.unique_number.result}"
+  name = "ec2_ssm_role-${substr(random_id.unique_id.hex, 0, 3)}"
 
   # Define the policy that allows EC2 instances to assume the role
   assume_role_policy = jsonencode({
