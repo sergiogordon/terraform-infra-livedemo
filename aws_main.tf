@@ -13,7 +13,7 @@ provider "aws" {
 }
 
 # Create an IAM role for EC2 instances to assume for accessing SSM
-resource "random_int" "unique_number" {
+resource "random_id" "unique_number" {
   min = 100
   max = 999
 }
