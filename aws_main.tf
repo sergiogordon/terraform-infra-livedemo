@@ -129,7 +129,7 @@ resource "aws_security_group" "allow_ssh_http" {
 
   # Allow SSH and HTTP traffic from anywhere
   ingress {
-    description = "SSH"
+    description = "Allow SSH access"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -137,4 +137,45 @@ resource "aws_security_group" "allow_ssh_http" {
   }
 
   ingress {
-    description
+    description = "Allow HTTP access"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Allow all outbound traffic
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Tag the security group for identification
+  tags = {
+    Name = "allow_ssh_http"
+  }
+}
+
+# Create a random ID for the S3 bucket
+resource "random_id" "unique_id_s3" {
+  byte_length = 8
+}
+
+# Associate an Elastic IP address with the EC2 instance
+resource "aws_eip" "web_eip" {
+  instance = aws_instance.web.id
+  domain   = "vpc"
+}
+
+# Output the public IP address of the EC2 instance
+output "instance_public_ip" {
+  value = aws_instance.web.public_ip
+}
+
+# Output the public IP address of the Elastic IP
+output "elastic_ip" {
+  value = aws_eip.web_eip.public_ip
+}
+
