@@ -158,7 +158,7 @@ resource "aws_security_group" "allow_ssh_http" {
 }
 
 # Create a random ID for the S3 bucket
-resource "random_id" "unique_id" {
+resource "random_id" "unique_id_s3" {
   byte_length = 8
 }
 
